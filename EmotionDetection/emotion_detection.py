@@ -1,15 +1,16 @@
-import requests
 import json
+import requests
 
 
 def emotion_detector(text_to_analyze):
-    """Analyze the emotion conveyed in the given text."""
+    """Analyze text using Watson NLP emotion detection."""
+
     url = (
-        'https://sn-watson-emotion.labs.skills.network/v1/'
-        'watson.runtime.nlp.v1/NlpService/EmotionPredict'
+        "https://sn-watson-emotion.labs.skills.network/"
+        "v1/watson.runtime.nlp.v1/NlpService/EmotionPredict"
     )
 
-    header = {
+    headers = {
         "grpc-metadata-mm-model-id":
         "emotion_aggregated-workflow_lang_en_stock"
     }
@@ -23,32 +24,35 @@ def emotion_detector(text_to_analyze):
     response = requests.post(
         url,
         json=input_json,
-        headers=header
+        headers=headers
     )
 
-    status_code = response.status_code
+    if response.status_code == 400:
+        return {
+            "anger": None,
+            "disgust": None,
+            "fear": None,
+            "joy": None,
+            "sadness": None,
+            "dominant_emotion": None
+        }
 
-    emotions = {}
+    formatted_response = json.loads(response.text)
 
-    if status_code == 200:
-        formatted_response = json.loads(response.text)
-        emotions = formatted_response[
-            'emotionPredictions'
-        ][0]['emotion']
+    emotions = formatted_response[
+        "emotionPredictions"
+    ][0]["emotion"]
 
-        dominant_emotion = max(
-            emotions,
-            key=emotions.get
-        )
+    dominant_emotion = max(
+        emotions,
+        key=emotions.get
+    )
 
-        emotions['dominant_emotion'] = dominant_emotion
-
-    elif status_code == 400:
-        emotions['anger'] = None
-        emotions['disgust'] = None
-        emotions['fear'] = None
-        emotions['joy'] = None
-        emotions['sadness'] = None
-        emotions['dominant_emotion'] = None
-
-    return emotions
+    return {
+        "anger": emotions["anger"],
+        "disgust": emotions["disgust"],
+        "fear": emotions["fear"],
+        "joy": emotions["joy"],
+        "sadness": emotions["sadness"],
+        "dominant_emotion": dominant_emotion
+    }
